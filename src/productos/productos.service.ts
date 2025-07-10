@@ -18,6 +18,7 @@ export class ProductsService {
     @InjectRepository(Product) private readonly productRepository:Repository<Product>,
   ) {}
 
+  // --------------------|| Create Product ||--------------------
   async create( createProductDto : CreateProductDto ) {
     try {
 
@@ -32,6 +33,7 @@ export class ProductsService {
     }
   }
 
+// --------------------|| Find all Product ||--------------------
   async findAll( { limit = 10, offset = 0 } : PaginationDto ) {
 
     try {
@@ -44,6 +46,7 @@ export class ProductsService {
     }
   }
 
+  // --------------------|| Find one Product ||--------------------
   async findOne( term:string ) {
 
     let product:Product | null;
@@ -65,6 +68,7 @@ export class ProductsService {
     return product;
   }
 
+  // --------------------|| Update Product ||--------------------
   async update( id:string, updateProductDto:UpdateProductoDto ) {
 
     const product = await this.productRepository.preload({
@@ -83,12 +87,14 @@ export class ProductsService {
     return product;
   }
 
+  // --------------------|| Reomve Product ||--------------------
   async remove(idProduct : string) {
     const product = await this.findOne(idProduct);
 
     this.productRepository.remove(product);
   }
 
+  // --------------------|| Handle Exception ||--------------------
   private handleDbExceptions( error:any ) {
     if( error.code === '23505' ) throw new BadRequestException(error.detail);
 
