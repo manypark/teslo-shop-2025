@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { validate as isUUID } from "uuid";
 
-import { Product } from './entities/producto.entity';
+import { ProductImage, Product } from './entities';
 import { CreateProductDto, UpdateProductoDto } from './dto';
 import { PaginationDto } from 'src/common/dtos/pagination.dto';
 
@@ -15,18 +15,25 @@ export class ProductsService {
   private readonly logger = new Logger('ProductsService');
 
   constructor(
-    @InjectRepository(Product) private readonly productRepository:Repository<Product>,
+    @InjectRepository(Product)      private readonly productRepository:Repository<Product>,
+    @InjectRepository(ProductImage) private readonly productImagesRepository:Repository<ProductImage>,
   ) {}
 
   // --------------------|| Create Product ||--------------------
   async create( createProductDto : CreateProductDto ) {
+
     try {
 
-      const product = this.productRepository.create(createProductDto);
+      const { images = [], ...productDetails } = createProductDto;
+
+      const product = this.productRepository.create({
+        ...productDetails,
+        images: images.map( url => this.productImagesRepository.create({ url }) ),
+      });
 
       await this.productRepository.save(product);
 
-      return product;
+      return { ...product, images };
 
     } catch (error) {
       this.handleDbExceptions(error);
@@ -37,9 +44,19 @@ export class ProductsService {
   async findAll( { limit = 10, offset = 0 } : PaginationDto ) {
 
     try {
-      const products = this.productRepository.find({ take: limit, skip: offset });
 
-      return products;
+      const products = await this.productRepository.find({
+        take      : limit, 
+        skip      : offset,
+        relations : {
+          images : true,
+        }
+      });
+
+      return products.map( ({ images, ...prods }) => ({
+        ...prods,
+        images: images?.map( img => img.url )
+      }));
       
     } catch (error) {
       this.handleDbExceptions(error);
@@ -47,7 +64,7 @@ export class ProductsService {
   }
 
   // --------------------|| Find one Product ||--------------------
-  async findOne( term:string ) {
+  async findOne( term:string ):Promise<Product> {
 
     let product:Product | null;
 
@@ -56,11 +73,13 @@ export class ProductsService {
     if( isUUID(term) ) {
       product = await this.productRepository.findOneBy({ id:term });
     } else {
-      const queryBuilder = this.productRepository.createQueryBuilder();
+      const queryBuilder = this.productRepository.createQueryBuilder('prod');
       product = await queryBuilder.where('LOWER(title) =:title or slug =:slug', {
         title : term.toLocaleLowerCase(),
         slug  : term.toLocaleLowerCase(),
-      }).getOne();
+      })
+      .leftJoinAndSelect('prod.images','prodImages')
+      .getOne();
     }
 
     if( !product ) throw new NotFoundException('Product not found');
@@ -74,6 +93,7 @@ export class ProductsService {
     const product = await this.productRepository.preload({
       id:id,
       ...updateProductDto,
+      images:[],
     });
 
     if( !product ) throw new NotFoundException('Product not found');
@@ -100,5 +120,13 @@ export class ProductsService {
 
     this.logger.error(error);
     throw new InternalServerErrorException('Error in server');
+  }
+
+  async findOnePlain( term:string ) {
+    const {images = [], ...prod} = await this.findOne( term );
+    return {
+      ...prod,
+      images: images.map( image => image.url ),
+    }
   }
 }

@@ -31,12 +31,13 @@ export class Product {
     @Column('text')
     gender:string;
 
+// el 'eager' carga los datos de las relaciones en automatic
     @OneToMany(
         () => ProductImage,
         (productImage) => productImage.product,
-        { cascade : true }
+        { cascade:true, eager:true }
     )
-    images?:ProductImage;
+    images?:ProductImage[];
 
     @BeforeInsert()
     checkSlugInsert() {
