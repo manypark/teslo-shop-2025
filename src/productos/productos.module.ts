@@ -12,6 +12,6 @@ import { Product, ProductImage, ProductosController, ProductsService,  } from '.
       ProductImage
     ]),
   ],
-  exports     : [ProductsService],
+  exports     : [ProductsService, TypeOrmModule],
 })
 export class ProductsModule {}
