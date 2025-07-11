@@ -3,9 +3,9 @@
 </p>
 
 Pasos para ejecutar el proyecto
-1.- Clonar el repo
-2.- Crear el archivo .env
-3.- Crear las variables de entorno haica su back
-4.- Listo ya deberia de funcionar
+1. Clonar el repo
+2. Crear el archivo .env
+3. Crear las variables de entorno haica su back
+4. Listo ya deberia de funcionar
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
