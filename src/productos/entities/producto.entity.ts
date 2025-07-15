@@ -31,7 +31,7 @@ export class Product {
     @Column('text')
     gender:string;
 
-// el 'eager' carga los datos de las relaciones en automatic
+// el 'eager' carga los datos de las relaciones en automatico
     @OneToMany(
         () => ProductImage,
         (productImage) => productImage.product,
