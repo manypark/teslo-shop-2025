@@ -1,12 +1,13 @@
 import * as bcrypt from 'bcrypt';
 import { Repository } from 'typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 
+import { LoginUserDto } from './dto';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-user.dto';
-import { LoginUserDto } from './dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -14,10 +15,11 @@ export class AuthService {
   constructor(
     @InjectRepository(User)      
     private readonly userRepository:Repository<User>,
+    private readonly jwtServices:JwtService
   ) {}
 
   // --------------------|| Create User ||--------------------
-  async create( createAuthDto : CreateUserDto ):Promise<Partial<User>> {
+  async create( createAuthDto : CreateUserDto ) {
     
     try {
 
@@ -30,7 +32,10 @@ export class AuthService {
 
       await this.userRepository.save(newUser);
 
-      return { ...userData };
+      return {
+      ...userData,
+      token: this.getJwtToken({ idUser:newUser.idUser }),
+    };
 
     } catch (error) {
       this.handleDbExceptions(error);
@@ -38,38 +43,28 @@ export class AuthService {
   }
 
 // --------------------|| Login User ||--------------------
-  async login( { email, password } : LoginUserDto):Promise<User> {
+  async login( { email, password } : LoginUserDto) {
 
     const loginUser = await this.userRepository.findOne({
       where : { email },
-      select: { email : true, password : true },
+      select: { email : true, password : true, idUser: true },
     });
 
     if( !loginUser ) throw new UnauthorizedException('User not found');
 
     if( !bcrypt.compareSync(password, loginUser.password) ) throw new UnauthorizedException('User or Password not found');
 
-    return loginUser;
+    return {
+      ...loginUser,
+      token: this.getJwtToken({ idUser:loginUser.idUser }),
+    };
   }
 
-  // --------------------|| Get all User ||--------------------
-  findAll() {
-    return `This action returns all auth`;
-  }
+  private getJwtToken( payload:JwtPayload ):string {
 
-  // --------------------|| Find one User ||--------------------
-  findOne(id: number) {
-    return `This action returns a #${id} auth`;
-  }
+    const token = this.jwtServices.sign(payload);
 
-  // --------------------|| Update User ||--------------------
-  update(id: number, updateAuthDto: UpdateAuthDto) {
-    return `This action updates a #${id} auth`;
-  }
-
-  // --------------------|| Remove User ||--------------------
-  remove(id: number) {
-    return `This action removes a #${id} auth`;
+    return token;
   }
 
   private handleDbExceptions( error:any ):never {
