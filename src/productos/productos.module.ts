@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
+import { AuthModule } from '../auth/auth.module';
 import { Product, ProductImage, ProductosController, ProductsService,  } from './index';
 
 @Module({
@@ -11,6 +12,7 @@ import { Product, ProductImage, ProductosController, ProductsService,  } from '.
       Product,
       ProductImage
     ]),
+    AuthModule,
   ],
   exports     : [ProductsService, TypeOrmModule],
 })
